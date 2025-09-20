@@ -1,116 +1,131 @@
-<!-- 
-  アプリケーションのルートコンポーネント
-  
-  このコンポーネントはアプリケーション全体のレイアウトを定義します。
-  初心者向けにコメントを豊富に含めています。
--->
-
 <template>
   <div id="app">
-    <!-- ヘッダー部分 -->
-    <header class="app-header">
-      <h1>Stack Watcher</h1>
-      <nav>
-        <!-- ナビゲーションメニュー -->
-        <router-link to="/">ホーム</router-link>
-        <router-link to="/about">このアプリについて</router-link>
-      </nav>
-    </header>
+    <h1>Hello World!</h1>
+    <p>Vue.js + FastAPI アプリケーションが正常に動作しています。</p>
+    <button @click="count++">クリック回数: {{ count }}</button>
     
-    <!-- メインコンテンツ部分 -->
-    <!-- router-viewは現在のルートに対応するコンポーネントを表示 -->
-    <main class="app-main">
-      <router-view />
-    </main>
-    
-    <!-- フッター部分 -->
-    <footer class="app-footer">
-      <p>&copy; 2024 Stack Watcher. すべての権利は保護されています。</p>
-    </footer>
+    <div class="api-test">
+      <h2>API 通信テスト</h2>
+      <button @click="testHelloAPI">Hello API テスト</button>
+      <button @click="testHealthAPI">Health API テスト</button>
+      <div v-if="apiResponse" class="response">
+        <h3>レスポンス:</h3>
+        <pre>{{ apiResponse }}</pre>
+      </div>
+      <div v-if="apiError" class="error">
+        <h3>エラー:</h3>
+        <pre>{{ apiError }}</pre>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
-/**
- * アプリケーションのルートコンポーネント
- * 
- * このコンポーネントはアプリケーション全体の基本構造を提供します。
- */
+import { ref } from 'vue'
+
 export default {
   name: 'App',
-  
-  // コンポーネントがマウントされた時に実行される処理
-  mounted() {
-    console.log('Stack Watcher アプリケーションが起動しました')
+  setup() {
+    const count = ref(0)
+    const apiResponse = ref(null)
+    const apiError = ref(null)
+
+    const testHelloAPI = async () => {
+      try {
+        apiError.value = null
+        const response = await fetch('/api/hello')
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        }
+        const data = await response.json()
+        apiResponse.value = JSON.stringify(data, null, 2)
+      } catch (error) {
+        apiError.value = error.message
+        apiResponse.value = null
+      }
+    }
+
+    const testHealthAPI = async () => {
+      try {
+        apiError.value = null
+        const response = await fetch('/health')
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        }
+        const data = await response.json()
+        apiResponse.value = JSON.stringify(data, null, 2)
+      } catch (error) {
+        apiError.value = error.message
+        apiResponse.value = null
+      }
+    }
+
+    return {
+      count,
+      apiResponse,
+      apiError,
+      testHelloAPI,
+      testHealthAPI
+    }
   }
 }
 </script>
 
 <style>
-/* 
-  アプリケーション全体のスタイル
-  
-  基本的なレイアウトとスタイルを定義しています。
-*/
-
-/* リセットスタイル */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-/* アプリケーション全体のコンテナ */
 #app {
-  font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
-  color: #333;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-/* ヘッダーのスタイル */
-.app-header {
-  background-color: #2c3e50;
-  color: white;
-  padding: 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.app-header h1 {
-  font-size: 1.5rem;
-}
-
-.app-header nav a {
-  color: white;
-  text-decoration: none;
-  margin-left: 1rem;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  transition: background-color 0.3s;
-}
-
-.app-header nav a:hover,
-.app-header nav a.router-link-active {
-  background-color: #34495e;
-}
-
-/* メインコンテンツのスタイル */
-.app-main {
-  flex: 1;
-  padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
-  width: 100%;
-}
-
-/* フッターのスタイル */
-.app-footer {
-  background-color: #ecf0f1;
-  padding: 1rem;
+  font-family: Avenir, Helvetica, Arial, sans-serif;
   text-align: center;
-  color: #7f8c8d;
+  color: #2c3e50;
+  margin-top: 60px;
+}
+
+button {
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #42b983;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 5px;
+}
+
+button:hover {
+  background-color: #369870;
+}
+
+.api-test {
+  margin-top: 40px;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.response {
+  margin-top: 20px;
+  text-align: left;
+}
+
+.response pre {
+  background-color: #f5f5f5;
+  padding: 10px;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+.error {
+  margin-top: 20px;
+  text-align: left;
+}
+
+.error pre {
+  background-color: #ffe6e6;
+  color: #d63031;
+  padding: 10px;
+  border-radius: 4px;
+  overflow-x: auto;
 }
 </style>

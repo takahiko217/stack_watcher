@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Watcher 診断</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios@0.24.0/dist/axios.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .loading { background-color: #fff3cd; border-color: #ffeaa7; }
+        pre { background-color: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Stock Watcher API 診断ツール</h1>
+    
+    <div class="test-section">
+        <h3>1. バックエンド接続テスト</h3>
+        <button onclick="testBackendConnection()">接続テスト実行</button>
+        <div id="backend-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>2. 株価データ取得テスト</h3>
+        <button onclick="testStockData()">データ取得テスト</button>
+        <div id="stock-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>3. CORS テスト</h3>
+        <button onclick="testCORS()">CORSテスト実行</button>
+        <div id="cors-result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8003/api/v1';
+
+        async function testBackendConnection() {
+            const resultDiv = document.getElementById('backend-result');
+            resultDiv.innerHTML = '<p class="loading">テスト実行中...</p>';
+            
+            try {
+                const response = await axios.get('http://localhost:8003/health');
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h4>✅ バックエンド接続成功</h4>
+                        <pre>${JSON.stringify(response.data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ バックエンド接続失敗</h4>
+                        <p>エラー: ${error.message}</p>
+                        <pre>${error.stack}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        async function testStockData() {
+            const resultDiv = document.getElementById('stock-result');
+            resultDiv.innerHTML = '<p class="loading">データ取得中...</p>';
+            
+            try {
+                const response = await axios.get(`${API_BASE}/stocks?symbols=6326&period=7d`);
+                
+                if (response.data.success && response.data.data.stocks.length > 0) {
+                    const stock = response.data.data.stocks[0];
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ 株価データ取得成功</h4>
+                            <p><strong>銘柄:</strong> ${stock.company_name}</p>
+                            <p><strong>データポイント数:</strong> ${stock.data_points.length}</p>
+                            <p><strong>最新価格:</strong> ¥${stock.data_points[stock.data_points.length - 1].close}</p>
+                            <details>
+                                <summary>詳細データ (クリックして展開)</summary>
+                                <pre>${JSON.stringify(response.data, null, 2)}</pre>
+                            </details>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>⚠️ データは取得できたが内容が空</h4>
+                            <pre>${JSON.stringify(response.data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ 株価データ取得失敗</h4>
+                        <p>エラー: ${error.message}</p>
+                        <p>ステータス: ${error.response?.status || 'N/A'}</p>
+                        <pre>${JSON.stringify(error.response?.data || error.message, null, 2)}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        async function testCORS() {
+            const resultDiv = document.getElementById('cors-result');
+            resultDiv.innerHTML = '<p class="loading">CORS テスト中...</p>';
+            
+            try {
+                // Preflight request simulation
+                const response = await axios.options(`${API_BASE}/stocks`);
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h4>✅ CORS設定正常</h4>
+                        <p>Preflightリクエスト成功</p>
+                        <p>現在のオリジン: ${window.location.origin}</p>
+                    </div>
+                `;
+            } catch (error) {
+                if (error.message.includes('CORS')) {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ CORS エラー</h4>
+                            <p>フロントエンド: ${window.location.origin}</p>
+                            <p>バックエンド: http://localhost:8003</p>
+                            <p>エラー: ${error.message}</p>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ CORS問題なし</h4>
+                            <p>エラーはCORS関連ではありません</p>
+                            <p>現在のオリジン: ${window.location.origin}</p>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        // ページ読み込み時に自動実行
+        window.onload = async () => {
+            console.log('診断ツール開始');
+            await testBackendConnection();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            await testStockData();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            await testCORS();
+        };
+    </script>
+</body>
+</html>

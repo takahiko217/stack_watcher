@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Debug Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios@0.24.0/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>API Debug Test</h1>
+    <button onclick="testAPI()">Test API</button>
+    <div id="result"></div>
+
+    <script>
+        async function testAPI() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>Loading...</p>';
+            
+            try {
+                console.log('Testing API...');
+                const response = await axios.get('http://localhost:8003/api/v1/stocks?symbols=6326,9984,1377&period=7d');
+                console.log('API Response:', response.data);
+                
+                resultDiv.innerHTML = `
+                    <h3>API Test Success</h3>
+                    <pre>${JSON.stringify(response.data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                console.error('API Error:', error);
+                resultDiv.innerHTML = `
+                    <h3>API Test Failed</h3>
+                    <p>Error: ${error.message}</p>
+                    <pre>${error.stack}</pre>
+                `;
+            }
+        }
+        
+        // ページ読み込み時に自動テスト
+        window.onload = () => {
+            console.log('Page loaded, running automatic test...');
+            testAPI();
+        };
+    </script>
+</body>
+</html>

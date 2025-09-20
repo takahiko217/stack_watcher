@@ -1,6 +1,7 @@
 node_modules/
 venv/
-frontend/
-scripts/
-docs/
+frontend/node_modules/
+# frontend/
+# scripts/
+# docs/
 *.log

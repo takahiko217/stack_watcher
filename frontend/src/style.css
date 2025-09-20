@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* カスタムスタイル */
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* チャートコンテナ */
+.chart-container {
+  @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6;
+}
+
+/* ボタンスタイル */
+.btn-primary {
+  @apply bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium;
+}
+
+.btn-secondary {
+  @apply bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors duration-200 font-medium;
+}
+
+/* 読み込み中スピナー */
+.spinner {
+  @apply animate-spin rounded-full h-8 w-8 border-b-2 border-primary;
+}

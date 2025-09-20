@@ -43,7 +43,7 @@ npm install
 ```bash
 # バックエンド起動 (ターミナル1)
 source venv/bin/activate
-uvicorn backend.main:app --reload --host 0.0.0.0 --port 8003
+python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8003
 
 # フロントエンド開発サーバー起動 (ターミナル2) - オプション
 cd frontend
@@ -72,7 +72,7 @@ npm run build
 databricks workspace export-dir /Workspace/Users/[your-email]/databricks_apps/[app-name] .
 
 # ローカルからWorkspaceへリアルタイム同期開始
-databricks sync --watch . /Workspace/Users/[your-email]/databricks_apps/[app-name]
+databricks sync --watch . /Workspace/Users/s.taka7120@gmail.com/databricks_apps/hello-world_2025_09_20-06_56/nodejs-fastapi-hello-world-app
 ```
 
 #### 継続的な同期

@@ -1,290 +1,185 @@
-# Stack Watcher
+# Stack Watcher - Vue.js + FastAPI アプリケーション
 
-## 📋 概要
+Databricks Apps プラットフォーム向けのフルスタックアプリケーションです。Vue.js フロントエンドと FastAPI バックエンドを組み合わせ、技術スタック監視システムを提供します。
 
-Stack Watcher は、Vue.js と FastAPI を使用して構築された現代的なWebアプリケーションです。初心者でも理解しやすい構造と豊富なコメントで、学習と実用の両方に適した設計になっています。
+## アーキテクチャ
 
-## 🎯 特徴
+```
+Vue.js Frontend (TypeScript + Vite)
+    ↓ API calls
+FastAPI Backend (Python)
+    ↓ Serves static files + API
+Databricks Apps
+```
 
-- **🔰 初心者フレンドリー**: 豊富なコメントと分かりやすいコード構造
-- **🏗️ モジュラー設計**: 機能ごとに分離された保守しやすい構造
-- **⚡ 最新技術**: Vue.js 3 + FastAPI の組み合わせ
-- **📚 国際標準対応**: ドキュメント管理において国際標準に準拠
-- **🚀 高性能**: 最適化されたビルドとデプロイメント
+## Databricks Apps 開発ワークフロー
 
-## 🛠️ 使用技術
+### 基本概念
 
-### フロントエンド
-- **Vue.js 3** - プログレッシブフレームワーク
-- **Vue Router** - シングルページアプリケーション
-- **Pinia** - 状態管理
-- **Vite** - 高速ビルドツール
-- **Axios** - HTTP クライアント
+Databricks Apps は、バックエンドサーバーがフロントエンドの静的ファイルを配信する構成になっています。そのため：
 
-### バックエンド
-- **FastAPI** - 高性能Webフレームワーク
-- **Python 3.11+** - プログラミング言語
-- **Uvicorn** - ASGIサーバー
-- **SQLAlchemy** - ORMライブラリ
-- **Pydantic** - データバリデーション
+- **バックエンドのみ Databricks にデプロイ**：`app.yaml` で uvicorn サーバーを起動
+- **フロントエンドは静的ファイル**：ビルドされた dist ファイルを backend/static に配置
+- **ローカル開発**：VSCode でコード編集し、完了後に Databricks Workspace と同期
 
-## 📁 プロジェクト構造
+### 1. 初期セットアップ
+
+```bash
+# Python 仮想環境作成
+python3 -m venv venv
+source venv/bin/activate
+
+# Python 依存関係インストール
+pip install -r requirements.txt
+
+# Node.js 依存関係インストール（フロントエンド用）
+npm install
+```
+
+### 2. ローカル開発
+
+#### 開発サーバー起動
+
+```bash
+# バックエンド起動 (ターミナル1)
+source venv/bin/activate
+uvicorn backend.main:app --reload --host 0.0.0.0 --port 8003
+
+# フロントエンド開発サーバー起動 (ターミナル2) - オプション
+cd frontend
+npm run dev --host 0.0.0.0 --port 5173
+```
+
+- フロントエンド: http://localhost:5173 (開発用・ホットリロード対応)
+- バックエンド API: http://localhost:8003/docs (Swagger UI)
+- 統合アプリ: http://localhost:8003 (本番相当)
+
+#### フロントエンド更新時
+
+```bash
+# フロントエンドをビルドして backend/static に出力
+npm run build
+```
+
+**重要**: `vite.config.js` で `outDir: '../backend/static'` に設定済みのため、ビルド時に自動的にバックエンドの静的ファイルディレクトリに配置されます。
+
+### 3. Databricks Workspace との同期
+
+#### ファイル同期 (初回)
+
+```bash
+# Workspace からローカルにテンプレートをダウンロード（初回のみ）
+databricks workspace export-dir /Workspace/Users/[your-email]/databricks_apps/[app-name] .
+
+# ローカルからWorkspaceへリアルタイム同期開始
+databricks sync --watch . /Workspace/Users/[your-email]/databricks_apps/[app-name]
+```
+
+#### 継続的な同期
+
+`databricks sync --watch` コマンドを実行中は、ローカルファイルの変更が自動的に Databricks Workspace に同期されます。
+
+### 4. Databricks Apps デプロイ
+
+```bash
+# アプリを Databricks Apps にデプロイ
+databricks apps deploy [app-name] --source-code-path /Workspace/Users/[your-email]/databricks_apps/[app-name]
+```
+
+### 5. プロジェクト構成
 
 ```
 stack_watcher/
-├── frontend/                 # Vue.js フロントエンド
-│   ├── src/
-│   │   ├── components/       # 再利用可能なコンポーネント
-│   │   ├── views/           # ページコンポーネント
-│   │   ├── stores/          # Pinia状態管理
-│   │   ├── assets/          # 静的アセット
-│   │   ├── utils/           # ユーティリティ関数
-│   │   ├── router.js        # ルーティング設定
-│   │   ├── App.vue          # ルートコンポーネント
-│   │   └── main.js          # エントリーポイント
-│   ├── public/              # 公開ファイル
-│   ├── package.json         # 依存関係管理
-│   ├── vite.config.js       # Vite設定
-│   └── index.html           # HTMLテンプレート
-├── backend/                 # FastAPI バックエンド
-│   ├── app/
-│   │   ├── api/             # APIエンドポイント
-│   │   ├── models/          # データモデル
-│   │   ├── core/            # コア機能（設定など）
-│   │   └── utils/           # ユーティリティ関数
-│   ├── main.py              # FastAPIアプリケーション
-│   └── requirements.txt     # Python依存関係
-├── scripts/                 # 環境設定・起動スクリプト
-│   ├── setup.sh             # 環境セットアップ
-│   └── start.sh             # アプリケーション起動
-├── docs/                    # ドキュメント
-│   ├── templates/           # ドキュメントテンプレート
-│   ├── api/                 # API仕様書
-│   └── user_manual/         # ユーザーマニュアル
-├── config/                  # 設定ファイル
-├── README.md                # このファイル
-└── .gitignore               # Git除外設定
+├── app.yaml                    # Databricks Apps 設定ファイル
+├── requirements.txt            # Python 依存関係
+├── backend/
+│   ├── main.py                # FastAPI アプリケーション
+│   ├── static/                # フロントエンドビルド出力先
+│   └── app/
+│       └── core/
+│           └── config.py      # 設定管理
+├── frontend/
+│   ├── index.html
+│   ├── vite.config.js         # Vite 設定（ビルド出力先設定含む）
+│   └── src/
+│       ├── main.js           # Vue.js エントリーポイント
+│       └── App.vue           # メインコンポーネント
+└── docs/                      # ドキュメント
 ```
 
-### 📂 フォルダ構造の説明
+### 6. 重要なファイル
 
-#### フロントエンド (`frontend/`)
-- **`src/components/`**: 再利用可能なVueコンポーネントを格納
-- **`src/views/`**: ページレベルのコンポーネントを格納
-- **`src/stores/`**: Piniaを使った状態管理ファイル
-- **`src/utils/`**: フロントエンド共通のユーティリティ関数
-- **`src/assets/`**: 画像、スタイルシートなどの静的ファイル
-
-#### バックエンド (`backend/`)
-- **`app/api/`**: REST APIのエンドポイント定義
-- **`app/models/`**: データベースモデルの定義
-- **`app/core/`**: アプリケーションの核となる設定や共通機能
-- **`app/utils/`**: バックエンド共通のユーティリティ関数
-
-#### ドキュメント (`docs/`)
-- **`templates/`**: 国際標準に準拠したドキュメントテンプレート
-- **`api/`**: API仕様書とドキュメント
-- **`user_manual/`**: エンドユーザー向けマニュアル
-
-## 🚀 セットアップ手順
-
-### 1. 前提条件
-
-以下のソフトウェアがインストールされている必要があります：
-
-- **Node.js** 18.0.0 以降
-- **Python** 3.11.0 以降
-- **Git**
-
-### 2. リポジトリのクローン
-
-```bash
-git clone https://github.com/takahiko217/stack_watcher.git
-cd stack_watcher
+#### `app.yaml`
+```yaml
+command: ["uvicorn", "backend.main:app"]
 ```
+Databricks Apps でのアプリケーション起動コマンドを定義。
 
-### 3. 自動セットアップ
+#### `backend/main.py`
+- FastAPI アプリケーション
+- `/api/*` ルートでバックエンド API を提供
+- `/` で静的ファイル（フロントエンド）を配信
+- SPA ルーティング対応のフォールバック機能
 
-環境のセットアップは自動化されています：
-
-```bash
-# 実行権限を付与
-chmod +x scripts/setup.sh
-
-# セットアップスクリプトを実行
-./scripts/setup.sh
+#### `frontend/vite.config.js`
+```javascript
+export default defineConfig({
+  plugins: [vue()],
+  build: {
+    outDir: resolve(__dirname, '../backend/static'),
+    emptyOutDir: true,
+  }
+})
 ```
+フロントエンドビルド時に `backend/static` に出力するよう設定。
 
-このスクリプトは以下を自動で実行します：
-- Node.js と Python の確認
-- フロントエンド依存関係のインストール
-- Python仮想環境の作成
-- バックエンド依存関係のインストール
-- 環境設定ファイルの生成
+### 7. 開発のベストプラクティス
 
-### 4. アプリケーションの起動
+1. **フロントエンド変更時**：
+   - 開発中は `npm run dev` でホットリロードを活用
+   - 完了したら `npm run build` でビルドし、`backend/static` を更新
 
-```bash
-# 実行権限を付与
-chmod +x scripts/start.sh
+2. **バックエンド変更時**：
+   - `uvicorn --reload` でサーバー自動再起動を活用
+   - API 変更時はフロントエンド側の型定義も更新
 
-# アプリケーションを起動
-./scripts/start.sh
-```
+3. **同期とデプロイ**：
+   - `databricks sync --watch` を常時実行
+   - 重要な変更後は `databricks apps deploy` でデプロイテスト
 
-### 5. アクセス
+4. **トラブルシューティング**：
+   - フロントエンドが表示されない → `npm run build` 実行確認
+   - API が応答しない → バックエンドのログとCORS設定確認
+   - Databricks 同期エラー → 認証とパス設定確認
 
-セットアップが完了したら、以下のURLでアクセスできます：
+## API エンドポイント
 
-- **フロントエンド**: http://localhost:3000
-- **バックエンド API**: http://localhost:8000
-- **API ドキュメント**: http://localhost:8000/docs
+- `GET /api/hello` - Hello world メッセージ
+- `GET /api/health` - ヘルスチェック
+- `GET /health` - システムヘルスチェック
+- `GET /api/data` - サンプルデータ（チャート用）
+- `GET /docs` - FastAPI 自動生成ドキュメント
 
-## 🔧 開発環境
-
-### 手動セットアップ（上級者向け）
-
-自動セットアップを使わない場合は、以下の手順で手動セットアップできます：
-
-#### フロントエンド
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-#### バックエンド
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # Windowsの場合: venv\Scripts\activate
-pip install -r requirements.txt
-python main.py
-```
-
-### 🧪 テスト実行
-
-```bash
-# フロントエンドのテスト
-cd frontend
-npm run test
-
-# バックエンドのテスト
-cd backend
-source venv/bin/activate
-pytest
-```
-
-### 🔍 コード品質チェック
-
-```bash
-# フロントエンドのリント
-cd frontend
-npm run lint
-
-# バックエンドのリント
-cd backend
-source venv/bin/activate
-flake8 .
-```
-
-## 📖 ドキュメント
-
-このプロジェクトでは国際標準に準拠したドキュメント管理を採用しています：
-
-- **[README テンプレート](docs/templates/README_template.md)**: プロジェクト概要用
-- **[API 仕様書テンプレート](docs/templates/API_specification_template.md)**: REST API仕様用
-- **[ユーザーマニュアルテンプレート](docs/templates/user_manual_template.md)**: エンドユーザー向け
-
-## 🎨 コーディングガイドライン
-
-### Vue.js（フロントエンド）
-- **ファイル名**: PascalCase（例: `UserProfile.vue`）
-- **コンポーネント名**: PascalCase
-- **変数・関数名**: camelCase
-- **定数**: UPPER_SNAKE_CASE
-- **コメント**: 日本語で初心者向けに詳しく記載
-
-### Python（バックエンド）
-- **ファイル名**: snake_case（例: `user_service.py`）
-- **クラス名**: PascalCase
-- **関数・変数名**: snake_case
-- **定数**: UPPER_SNAKE_CASE
-- **docstring**: 日本語で目的と使用方法を明記
-
-## 🚨 トラブルシューティング
+## トラブルシューティング
 
 ### よくある問題
 
-#### ポートが既に使用されている
-```bash
-# ポート使用状況の確認
-lsof -i :3000  # フロントエンド
-lsof -i :8000  # バックエンド
+1. **フロントエンドが表示されない**
+   ```bash
+   npm run build  # backend/static を更新
+   ```
 
-# プロセスを終了
-kill -9 [PID]
-```
+2. **API 接続エラー**
+   - CORS 設定確認: `backend/app/core/config.py`
+   - プロキシ設定確認: `frontend/vite.config.js`
 
-#### 依存関係のエラー
-```bash
-# フロントエンド
-cd frontend
-rm -rf node_modules package-lock.json
-npm install
+3. **Databricks 同期エラー**
+   ```bash
+   databricks auth login  # 認証確認
+   ```
 
-# バックエンド
-cd backend
-rm -rf venv
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
+## 参考資料
 
-#### 権限エラー
-```bash
-# スクリプトに実行権限を付与
-chmod +x scripts/*.sh
-```
-
-## 🤝 貢献
-
-### 貢献の流れ
-1. このリポジトリをフォーク
-2. 機能ブランチを作成 (`git checkout -b feature/amazing-feature`)
-3. 変更をコミット (`git commit -m 'Add amazing feature'`)
-4. ブランチをプッシュ (`git push origin feature/amazing-feature`)
-5. プルリクエストを作成
-
-### 開発ルール
-- コミットメッセージは日本語で記載
-- 新機能には必ずテストを追加
-- コードには初心者向けのコメントを記載
-- ドキュメントの更新を忘れずに
-
-## 📄 ライセンス
-
-このプロジェクトは MIT ライセンスの下で公開されています。詳細は [LICENSE](LICENSE) ファイルを参照してください。
-
-## 📞 お問い合わせ
-
-- **GitHub Issues**: [Issues ページ](https://github.com/takahiko217/stack_watcher/issues)
-- **プロジェクト管理者**: takahiko217
-
----
-
-## 💡 学習リソース
-
-### 使用技術の学習リンク
-- **Vue.js**: [公式ドキュメント](https://vuejs.org/)
-- **FastAPI**: [公式ドキュメント](https://fastapi.tiangolo.com/)
-- **Python**: [公式チュートリアル](https://docs.python.org/ja/3/tutorial/)
-- **JavaScript**: [MDN Web Docs](https://developer.mozilla.org/ja/docs/Web/JavaScript)
-
-### コーディングベストプラクティス
-- コードは自己文書化を心がける
-- 関数は単一責任の原則に従う
-- エラーハンドリングを適切に実装
-- セキュリティを常に意識する
-
-**Happy Coding! 🚀**
+- [Databricks Apps 公式ドキュメント](https://docs.databricks.com/en/dev-tools/databricks-apps.html)
+- [FastAPI 公式ドキュメント](https://fastapi.tiangolo.com/)
+- [Vue.js 公式ガイド](https://vuejs.org/guide/)

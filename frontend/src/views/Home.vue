@@ -73,7 +73,7 @@ export default {
     const checkApiStatus = async () => {
       try {
         // バックエンドAPIのヘルスチェックエンドポイントにリクエスト
-        const response = await fetch('http://localhost:8000/health')
+        const response = await fetch('http://localhost:8003/api/health')
         
         if (response.ok) {
           const data = await response.json()

@@ -1,75 +1,60 @@
-"""
-Stack Watcher FastAPI アプリケーションのメインファイル
+import os
+import logging
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
-このファイルはFastAPIアプリケーションの起動ポイントとなります。
-初心者向けにコメントを豊富に含めています。
-"""
-
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from app.core.config import settings
-
-# FastAPIアプリケーションインスタンスを作成
-# title: APIのタイトル
-# description: APIの説明
-# version: APIのバージョン
-app = FastAPI(
-    title="Stack Watcher API",
-    description="技術スタック監視システムのAPI",
-    version="1.0.0"
+# --- Logging Setup ---
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s"
 )
+logger = logging.getLogger(__name__)
 
-# CORS（Cross-Origin Resource Sharing）設定
-# フロントエンドからのリクエストを許可するために必要
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Vue.jsアプリのURL
-    allow_credentials=True,
-    allow_methods=["*"],  # すべてのHTTPメソッドを許可
-    allow_headers=["*"],  # すべてのヘッダーを許可
-)
+app = FastAPI(title="Simple FastAPI + Vue App")
 
-# ルートエンドポイント
-# アプリケーションが正常に動作しているかを確認するためのシンプルなエンドポイント
-@app.get("/")
-async def read_root():
-    """
-    ルートエンドポイント
-    
-    Returns:
-        dict: アプリケーションの基本情報
-    """
-    return {
-        "message": "Stack Watcher API へようこそ！",
-        "status": "正常に動作中",
-        "version": "1.0.0"
-    }
+# --- API Routes ---
+@app.get("/api/hello")
+async def hello():
+    logger.info("Accessed /api/hello")
+    return {"message": "Hello from FastAPI!"}
 
-# ヘルスチェックエンドポイント
-# システムの状態を確認するためのエンドポイント
 @app.get("/health")
 async def health_check():
-    """
-    ヘルスチェックエンドポイント
-    
-    Returns:
-        dict: システムの健全性情報
-    """
+    logger.info("Health check at /health")
+    return {"status": "healthy"}
+
+@app.get("/api/health")
+async def api_health_check():
+    logger.info("Health check at /api/health")
+    return {"status": "healthy", "message": "FastAPI backend is running"}
+
+@app.get("/api/data")
+async def get_data():
+    logger.info("Data requested at /api/data")
+    data = [{"x": x, "y": 2 ** x} for x in range(30)]
     return {
-        "status": "healthy",
-        "message": "システムは正常に動作しています"
+        "data": data,
+        "title": "Hello world!",
+        "x_title": "Apps",
+        "y_title": "Fun with data"
     }
 
-# アプリケーションの起動（開発用）
-if __name__ == "__main__":
-    import uvicorn
-    # uvicornサーバーでアプリケーションを起動
-    # host="0.0.0.0": すべてのネットワークインターフェースでリッスン
-    # port=8000: ポート8000で起動
-    # reload=True: ファイル変更時に自動リロード（開発時のみ使用）
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True
+# --- Static Files Setup ---
+static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+os.makedirs(static_dir, exist_ok=True)
+
+app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
+
+# --- Catch-all for React Routes ---
+@app.get("/{full_path:path}")
+async def serve_react(full_path: str):
+    index_html = os.path.join(static_dir, "index.html")
+    if os.path.exists(index_html):
+        logger.info(f"Serving React frontend for path: /{full_path}")
+        return FileResponse(index_html)
+    logger.error("Frontend not built. index.html missing.")
+    raise HTTPException(
+        status_code=404,
+        detail="Frontend not built. Please run 'npm run build' first."
     )

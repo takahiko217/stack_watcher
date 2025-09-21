@@ -8,6 +8,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Home from './views/Home.vue'
 import About from './views/About.vue'
+import Dashboard from './views/Dashboard.vue'
 
 /**
  * ルートの定義
@@ -22,6 +23,11 @@ const routes = [
     path: '/',           // ホームページのURL
     name: 'Home',        // ルートの名前
     component: Home      // 表示するコンポーネント
+  },
+  {
+    path: '/dashboard',  // ダッシュボードページのURL
+    name: 'Dashboard',   // ルートの名前
+    component: Dashboard // 表示するコンポーネント
   },
   {
     path: '/about',      // このアプリについてページのURL

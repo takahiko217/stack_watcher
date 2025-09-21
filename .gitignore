@@ -1,7 +1,12 @@
 node_modules/
 venv/
 frontend/node_modules/
-# frontend/
-# scripts/
-# docs/
+frontend/playwright-report/
+frontend/test-results/
 *.log
+
+
+# databricks sync
+frontend/
+scripts/
+docs/

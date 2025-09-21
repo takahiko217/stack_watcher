@@ -18,8 +18,8 @@ export const useStockStore = defineStore('stock', {
     // 選択された銘柄
     selectedSymbols: ['6326', '9984', '1377'],
     
-    // 表示期間
-    period: '7d',
+    // 表示期間（Phase 2拡張対応）
+    selectedPeriod: '7d',
     
     // 読み込み状態
     isLoading: false,
@@ -81,7 +81,7 @@ export const useStockStore = defineStore('stock', {
       
       try {
         const symbols = this.selectedSymbols.join(',')
-        const url = `${API_BASE_URL}/stocks?symbols=${symbols}&period=${this.period}`
+        const url = `${API_BASE_URL}/stocks?symbols=${symbols}&period=${this.selectedPeriod}`
         console.log('API request URL:', url)
         
         const response = await axios.get(url)
@@ -104,10 +104,10 @@ export const useStockStore = defineStore('stock', {
       }
     },
     
-    // 表示期間を変更
+    // 表示期間を変更（Phase 2対応）
     setPeriod(newPeriod) {
-      console.log('setPeriod called:', this.period, '->', newPeriod)
-      this.period = newPeriod
+      console.log('Stock setPeriod called:', this.selectedPeriod, '->', newPeriod)
+      this.selectedPeriod = newPeriod
       this.fetchStocks()
     },
     

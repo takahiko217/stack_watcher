@@ -10,7 +10,7 @@ frontend/test-results/
 .pytest_cache/
 .databricks/
 
-# databricks sync
-frontend/
-scripts/
-docs/
+# # databricks sync
+# frontend/
+# scripts/
+# docs/

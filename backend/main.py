@@ -7,11 +7,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
 
 # 株価データサービスをインポート
-from stock_service import stock_service
+from backend.stock_service import stock_service
 # インデックスデータサービスをインポート
-from index_service import index_service
+from backend.index_service import index_service
 # 気象データサービスをインポート
-from weather_service import weather_service
+from backend.weather_service import weather_service
 
 # --- Logging Setup ---
 logging.basicConfig(

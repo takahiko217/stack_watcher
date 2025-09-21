@@ -7,7 +7,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
 
 # 株価データサービスをインポート
-from .stock_service import stock_service
+from backend.stock_service import stock_service
+# インデックスデータサービスをインポート
+from backend.index_service import index_service
+# 気象データサービスをインポート
+from backend.weather_service import weather_service
 
 # --- Logging Setup ---
 logging.basicConfig(
@@ -94,6 +98,104 @@ async def get_multiple_stocks(symbols: str, period: Optional[str] = "7d"):
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"複数銘柄データ取得エラー: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- インデックスデータAPI (Phase 2) ---
+@app.get("/api/v1/indices")
+async def get_indices(period: str = "7d"):
+    """全インデックスデータを取得"""
+    try:
+        logger.info(f"インデックスデータ取得リクエスト - 期間: {period}")
+        
+        # 有効な期間チェック
+        valid_periods = ["7d", "1m", "3m"]
+        if period not in valid_periods:
+            raise ValueError(f"無効な期間: {period}. 有効な期間: {valid_periods}")
+        
+        data = index_service.get_index_data(period=period)
+        return data
+        
+    except ValueError as e:
+        logger.warning(f"無効なリクエスト: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"インデックスデータ取得エラー: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/v1/indices/{symbol}")
+async def get_single_index(symbol: str, period: str = "7d"):
+    """単一インデックスデータを取得"""
+    try:
+        logger.info(f"単一インデックスデータ取得リクエスト - 銘柄: {symbol}, 期間: {period}")
+        
+        # 有効な期間チェック
+        valid_periods = ["7d", "1m", "3m"]
+        if period not in valid_periods:
+            raise ValueError(f"無効な期間: {period}. 有効な期間: {valid_periods}")
+        
+        data = index_service.get_single_index(symbol, period)
+        
+        if not data["success"]:
+            raise HTTPException(status_code=404, detail=data["error"])
+        
+        return data
+        
+    except ValueError as e:
+        logger.warning(f"無効なリクエスト: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise  # HTTPExceptionはそのまま再発生
+    except Exception as e:
+        logger.error(f"単一インデックスデータ取得エラー: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/v1/indices/available")
+async def get_available_indices():
+    """利用可能なインデックス銘柄一覧を取得"""
+    try:
+        logger.info("利用可能インデックス一覧取得リクエスト")
+        data = index_service.get_available_indices()
+        return data
+    except Exception as e:
+        logger.error(f"利用可能インデックス一覧取得エラー: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- 気象データAPI (Phase 2) ---
+@app.get("/api/v1/weather")
+async def get_weather_data(location: str = "tokyo", period: str = "7d"):
+    """気象データを取得"""
+    try:
+        logger.info(f"気象データ取得リクエスト - 地域: {location}, 期間: {period}")
+        
+        # 有効な期間チェック
+        if not weather_service.validate_period(period):
+            valid_periods = ["7d", "1m", "3m"]
+            raise ValueError(f"無効な期間: {period}. 有効な期間: {valid_periods}")
+        
+        # 有効な地域チェック
+        if not weather_service.validate_location(location):
+            valid_locations = ["tokyo"]
+            raise ValueError(f"無効な地域: {location}. 有効な地域: {valid_locations}")
+        
+        data = weather_service.get_weather_data(location, period)
+        return data
+        
+    except ValueError as e:
+        logger.warning(f"無効なリクエスト: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"気象データ取得エラー: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/v1/weather/locations")
+async def get_available_weather_locations():
+    """利用可能な気象観測地点一覧を取得"""
+    try:
+        logger.info("利用可能気象観測地点一覧取得リクエスト")
+        data = weather_service.get_available_locations()
+        return data
+    except Exception as e:
+        logger.error(f"利用可能気象観測地点一覧取得エラー: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # --- 既存のAPI エンドポイント ---

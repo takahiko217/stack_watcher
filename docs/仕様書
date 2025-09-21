@@ -62,16 +62,36 @@
 - **ECharts**: グラフ描画ライブラリ
 - **Tailwind CSS**: UIデザインフレームワーク
 
-#### 3.1.2 コンポーネント構成
+#### 3.1.2 コンポーネント構成（Phase 2拡張）
 ```
 App.vue
-├── Header.vue
-├── Sidebar.vue
-├── MainContent.vue
-│   ├── StockChart.vue
-│   ├── IndexChart.vue
-│   └── WeatherChart.vue
-└── Footer.vue
+├── components/layout/
+│   ├── AppHeader.vue          # 期間選択タブ追加
+│   ├── AppSidebar.vue         # データ表示切り替え
+│   ├── MainDashboard.vue      # 3段レイアウト管理
+│   └── AppFooter.vue
+├── components/charts/
+│   ├── BaseChart.vue          # チャート基盤
+│   ├── StockChart.vue         # 株価専用チャート
+│   ├── IndexChart.vue         # インデックス専用チャート
+│   ├── WeatherChart.vue       # 気象データ専用チャート
+│   ├── ChartContainer.vue     # 同期機能付きコンテナ
+│   └── PeriodSelector.vue     # 期間選択UI
+├── components/common/
+│   ├── BaseButton.vue
+│   ├── BaseLoading.vue
+│   └── BaseModal.vue
+├── stores/
+│   ├── stockStore.js          # 株価データ管理
+│   ├── indexStore.js          # インデックスデータ管理
+│   ├── weatherStore.js        # 気象データ管理
+│   ├── syncStore.js           # グラフ同期状態管理
+│   └── uiStore.js             # UI状態管理
+└── services/
+    ├── stockService.js        # 株価API
+    ├── indexService.js        # インデックスAPI
+    ├── weatherService.js      # 気象データAPI
+    └── apiClient.js           # 統合APIクライアント
 ```
 
 ### 3.2 バックエンド
@@ -83,38 +103,170 @@ App.vue
 
 #### 3.2.2 エンドポイント
 ```
-GET /api/stocks/{symbol}?period={7d|1m|3m}
-GET /api/indices?period={7d|1m|3m}
-GET /api/weather?period={7d|1m|3m}
-GET /api/colors/master
+# 株価データ
+GET /api/v1/stocks?symbols={symbol_list}&period={7d|1m|3m}
+GET /api/v1/stocks/{symbol}?period={7d|1m|3m}
+
+# インデックスデータ（Phase 2新規）
+GET /api/v1/indices?period={7d|1m|3m}
+GET /api/v1/indices/{index}?period={7d|1m|3m}
+
+# 気象データ（Phase 2新規）
+GET /api/v1/weather?period={7d|1m|3m}&location=tokyo
+
+# システム
+GET /api/v1/health
+GET /api/v1/demo
 ```
 
-### 3.3 データソース
-- **株価データ**: Yahoo Finance API
-- **気象データ**: 気象庁API
-- **更新頻度**: 15分間隔（市場開場時）
+#### 3.2.3 データモデル（Phase 2拡張）
+
+**インデックスデータ構造**:
+```json
+{
+  "success": true,
+  "data": {
+    "^N225": {
+      "name": "日経225",
+      "dates": ["2025-09-13", "2025-09-14", ...],
+      "values": [28450.0, 28520.5, ...],
+      "changes": [120.5, 70.5, ...],
+      "change_percent": [0.42, 0.25, ...]
+    }
+  }
+}
+```
+
+**気象データ構造**:
+```json
+{
+  "success": true,
+  "data": {
+    "dates": ["2025-09-13", "2025-09-14", ...],
+    "precipitation": [2.5, 0.0, 8.2, ...],
+    "temperature": [24.5, 26.1, 23.8, ...],
+    "pressure": [1013.2, 1015.8, 1012.1, ...]
+  }
+}
+```
+
+**統合レスポンス構造**:
+```json
+{
+  "success": true,
+  "data": {
+    "stocks": [StockData],
+    "indices": [IndexData],
+    "weather": WeatherData,
+    "period": "7d|1m|3m",
+    "lastUpdated": "2025-09-20T10:00:00Z"
+  }
+}
+```
+
+#### 3.2.4 TypeScript型定義（Phase 2）
+```typescript
+interface StockData {
+  symbol: string;
+  name: string;
+  dates: string[];
+  prices: number[];
+  volumes: number[];
+}
+
+interface IndexData {
+  symbol: string;
+  name: string;
+  dates: string[];
+  values: number[];
+  changes: number[];
+  changePercent: number[];
+}
+
+interface WeatherData {
+  location: string;
+  dates: string[];
+  precipitation: number[];
+  temperature: number[];
+  pressure: number[];
+}
+
+interface DashboardData {
+  stocks: StockData[];
+  indices: IndexData[];
+  weather: WeatherData;
+  period: string;
+  lastUpdated: string;
+}
+```
+
+### 3.3 データソース（Phase 2拡張）
+
+#### 3.3.1 株価・インデックスデータ
+- **プロバイダー**: Yahoo Finance API (yfinance 0.2.66+)
+- **対象銘柄**: 6326, 9984, 1377
+- **対象インデックス**: 
+  - ^N225（日経225）
+  - ^TPX（TOPIX）
+  - 2516.T（マザーズ指数）
+- **更新頻度**: 15分間隔（市場開場時間中）
+- **データ項目**: OHLCV（始値、高値、安値、終値、出来高）
+
+#### 3.3.2 気象データ
+- **プロバイダー**: OpenMeteo API
+- **取得地点**: 東京都（緯度: 35.6762, 経度: 139.6503）
+- **更新頻度**: 1日1回（深夜バッチ処理）
+- **データ項目**:
+  - 降水量（mm）: 日降水量の合計
+  - 気温（℃）: 日平均気温
+  - 気圧（hPa）: 日平均海面気圧
+- **データ保持期間**: 過去1年分
+- **API URL**: https://archive-api.open-meteo.com/v1/archive
+
+#### 3.3.3 データキャッシュ戦略
+- **株価・インデックス**: Redis 15分キャッシュ
+- **気象データ**: ローカルDB永続化
+- **エラー時**: 前回取得データをフォールバック
 
 ## 4. UI/UX仕様
 
 ### 4.1 レイアウト構成
 
-#### 4.1.1 ヘッダー
+#### 4.1.1 ヘッダー（Phase 2拡張）
 - **高さ**: 64px
-- **内容**: ロゴ、ナビゲーション、時間軸選択ボタン
+- **内容**: 
+  - ロゴ（左端）
+  - 期間選択タブ（中央）: 7日間 | 1ヶ月 | 四半期
+  - 設定ボタン（右端）
 - **位置**: 固定（sticky）
+- **期間選択UI**: アクティブタブのハイライト表示
 
-#### 4.1.2 サイドバー
+#### 4.1.2 サイドバー（Phase 2対応）
 - **幅**: 280px（展開時）、60px（折りたたみ時）
 - **表示条件**: マウスオーバー時に展開
-- **内容**: 銘柄選択、設定オプション、フィルター機能
+- **内容**: 
+  - データ表示切り替え（株価・インデックス・気象）
+  - グラフ表示設定
+  - データエクスポート機能（将来対応）
 
-#### 4.1.3 メインコンテンツ
-- **レイアウト**: 縦スクロール対応
-- **グラフ配置**: 株価→インデックス→気象データの順
+#### 4.1.3 メインコンテンツ（Phase 2レイアウト）
+- **レイアウト**: 縦スクロール対応の3段構成
+- **グラフ配置**: 
+  1. **株価グラフセクション**（高さ: 400px）
+     - 3銘柄の株価チャート
+     - 凡例とツールチップ
+  2. **インデックスグラフセクション**（高さ: 350px）
+     - 日経225、TOPIX、マザーズ指数
+     - 前日比表示機能
+  3. **気象データグラフセクション**（高さ: 300px）
+     - 降水量、気温、気圧の複合チャート
+     - 左右Y軸の使い分け
+- **同期機能**: 全グラフの横軸（時間軸）を同期
+- **インタラクション**: スライド・ズーム操作の連動
 
 #### 4.1.4 フッター
 - **高さ**: 48px
-- **内容**: コピーライト、利用規約、プライバシーポリシー
+- **内容**: コピーライト、データソース表記、利用規約
 
 ### 4.2 カラーパレット（マスタ管理）
 
@@ -126,13 +278,27 @@ GET /api/colors/master
 --accent-orange: #ea580c
 ```
 
-#### 4.2.2 グラフカラー
+#### 4.2.2 グラフカラー（Phase 2拡張）
+
+**株価チャート**:
 ```css
 --kubota-color: #2563eb     /* 青 */
 --softbank-color: #dc2626   /* 赤 */
 --sakata-color: #059669     /* 緑 */
+```
+
+**インデックスチャート**:
+```css
 --nikkei-color: #7c3aed     /* 紫 */
 --topix-color: #ea580c      /* オレンジ */
+--mothers-color: #f59e0b    /* アンバー */
+```
+
+**気象データチャート**:
+```css
+--precipitation-color: #0ea5e9  /* スカイブルー */
+--temperature-color: #ef4444   /* レッド */
+--pressure-color: #6b7280      /* グレー */
 ```
 
 #### 4.2.3 システムカラー
@@ -182,20 +348,31 @@ GET /api/colors/master
 
 ## 7. 開発環境
 
-### 7.1 必要な技術スタック
+### 7.1 必要な技術スタック（Phase 2拡張）
 ```json
 {
   "frontend": {
     "vue": "^3.3.0",
     "echarts": "^5.4.0",
     "tailwindcss": "^3.3.0",
-    "vite": "^4.4.0"
+    "vite": "^4.4.0",
+    "pinia": "^2.1.0",
+    "axios": "^1.5.0"
   },
   "backend": {
-    "fastapi": "^0.103.0",
-    "uvicorn": "^0.23.0",
-    "psycopg2": "^2.9.0",
-    "pandas": "^2.0.0"
+    "fastapi": "^0.115.5",
+    "uvicorn": "^0.32.1",
+    "yfinance": "^0.2.66",
+    "pandas": "^2.3.2",
+    "requests": "^2.31.0",
+    "httpx": "^0.25.0",
+    "redis": "^4.5.0"
+  },
+  "development": {
+    "pytest": "^7.4.0",
+    "black": "^23.7.0",
+    "eslint": "^8.45.0",
+    "prettier": "^3.0.0"
   }
 }
 ```
@@ -205,20 +382,54 @@ GET /api/colors/master
 - **ステージング**: Google Cloud Run
 - **本番**: Google Cloud Run + Cloud SQL
 
-## 8. テスト仕様
+## 8. テスト仕様（Phase 2拡張）
 
 ### 8.1 ユニットテスト
+**フロントエンド**:
 - Vue Component Test Utils
-- pytest (Python)
+- Vitest（Vue 3推奨テストランナー）
+- 対象コンポーネント: StockChart, IndexChart, WeatherChart, PeriodSelector
 - カバレッジ: 80%以上
 
-### 8.2 E2Eテスト
-- Playwright
-- 主要ユーザーフローの自動化
+**バックエンド**:
+- pytest (Python)
+- 対象モジュール: stock_service, index_service, weather_service
+- APIエンドポイントテスト
+- カバレッジ: 85%以上
 
-### 8.3 パフォーマンステスト
+### 8.2 統合テスト（Phase 2新規）
+**APIデータ統合**:
+- 株価・インデックス・気象データの同時取得
+- データ整合性チェック
+- エラーハンドリング検証
+
+**フロントエンド統合**:
+- マルチチャート表示
+- 同期機能テスト
+- 期間変更時のデータ更新
+
+### 8.3 E2Eテスト（Phase 2拡張）
+**ユーザーシナリオ**:
+- 期間選択による全グラフ更新
+- グラフ同期操作（スライド・ズーム）
+- エラー時のフォールバック表示
+- レスポンシブデザイン確認
+
+**テストツール**:
+- Playwright
+- クロスブラウザテスト
+- モバイルデバイステスト
+
+### 8.4 パフォーマンステスト（Phase 2強化）
+**メトリクス**:
+- 複数データ同時読み込み: 2秒以内
+- グラフ同期処理: 300ms以内
+- メモリ使用量: 100MB以下
+
+**測定ツール**:
 - Lighthouse CI
 - Core Web Vitals準拠
+- ECharts パフォーマンス監視
 
 ## 9. リリース計画
 
@@ -227,10 +438,80 @@ GET /api/colors/master
 - [x] 3銘柄の株価表示
 - [x] 7日間の時間軸
 
-### 9.2 Phase 2
-- [ ] インデックス表示機能
-- [ ] 気象データ表示機能
-- [ ] 1ヶ月・四半期表示
+### 9.2 Phase 2 - データ拡張とUI強化
+
+#### 9.2.1 インデックス表示機能
+- **対象指数**：
+  - 日経225 (^N225)
+  - TOPIX (^TPX) 
+  - マザーズ指数 (2516.T)
+- **表示項目**：
+  - 指数値（終値）
+  - 前日比（変化量）
+  - 騰落率（パーセント）
+  - 出来高（該当する場合）
+- **データソース**: Yahoo Finance API
+- **更新頻度**: 株価データと同じ15分間隔
+
+#### 9.2.2 気象データ表示機能
+- **表示項目**：
+  - 降水量（mm/日）
+  - 平均気温（℃）
+  - 気圧（hPa）
+- **データ取得地域**: 東京都（OpenMeteo API）
+- **データソース**: OpenMeteo Historical Weather API
+- **更新頻度**: 1日1回（深夜更新）
+- **データ期間**: 株価データと同期した期間
+
+#### 9.2.3 期間選択機能拡張
+- **追加期間オプション**：
+  - 1ヶ月（30日）
+  - 四半期（3ヶ月/90日）
+- **既存期間の維持**: 7日間
+- **UI配置**: ヘッダー部にタブ形式で配置
+- **データ同期**: 全グラフで選択期間を統一
+
+#### 9.2.4 レイアウト機能
+- **縦配置レイアウト**：
+  1. 株価グラフ（上部）
+  2. インデックスグラフ（中部）
+  3. 気象データグラフ（下部）
+- **横軸同期**: 全グラフの時間軸を統一
+- **スライド同期**: 一つのグラフをスライドすると全グラフが連動
+- **ズーム同期**: 拡大縮小操作の全グラフ連動
+
+#### 9.2.5 データ相関分析基盤
+- **相関可視化準備**: 農業関連株（サカタのタネ）と気象データの関連性
+- **データ蓄積**: 将来的な分析のためのデータ保存構造
+- **パフォーマンス最適化**: 複数データソースの効率的な取得
+
+#### 9.2.6 Phase 2 実装計画
+
+**Phase 2.1: バックエンドAPI実装（2週間）**
+1. インデックスデータAPI開発
+   - Yahoo FinanceからN225, TOPIX, マザーズ取得
+   - 前日比・騰落率計算ロジック
+2. 気象データAPI開発
+   - OpenMeteo API統合
+   - データキャッシュ機能
+3. エンドポイント統合テスト
+
+**Phase 2.2: フロントエンド基盤実装（2週間）**
+1. 新規Store実装（indexStore, weatherStore, syncStore）
+2. 期間選択UI実装（PeriodSelector）
+3. レイアウトコンポーネント拡張（MainDashboard）
+
+**Phase 2.3: チャート機能実装（3週間）**
+1. IndexChart コンポーネント実装
+2. WeatherChart コンポーネント実装
+3. 同期機能実装（横軸・スライド・ズーム）
+4. チャート間データ連携
+
+**Phase 2.4: 統合・最適化（1週間）**
+1. 全機能の統合テスト
+2. パフォーマンス最適化
+3. UI/UXの調整
+4. デプロイ準備
 
 ### 9.3 Phase 3
 - [ ] 高度なインタラクション機能

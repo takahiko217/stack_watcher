@@ -46,7 +46,7 @@ source venv/bin/activate
 python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8003
 
 # フロントエンド開発サーバー起動 (ターミナル2) - オプション
-cd frontend
+
 npm run dev --host 0.0.0.0 --port 5173
 ```
 

@@ -20,7 +20,7 @@ class StockService:
             "1377": {"code": "1377.T", "name": "サカタのタネ"}
         }
         
-        # 期間のマッピング
+        # 期間マッピング（Phase 2拡張）
         self.period_map = {
             "7d": "7d",
             "1m": "1mo", 

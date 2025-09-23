@@ -58,7 +58,6 @@ import WeatherChart from '@/components/charts/WeatherChart.vue'
 import IndexChart from '@/components/charts/IndexChart.vue'
 import PeriodSelector from '@/components/common/PeriodSelector.vue'
 
-const apiResult = ref(null)
 const stockData = ref({})
 const indexData = ref({})
 const weatherData = ref({})

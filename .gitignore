@@ -1,7 +1,7 @@
 # common
 node_modules/
 venv/
-backend/__pycache__/
+**/__pycache__/
 frontend/node_modules/
 frontend/playwright-report/
 frontend/test-results/

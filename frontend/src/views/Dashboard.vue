@@ -47,27 +47,6 @@
           />
         </div>
       </div>
-
-      <!-- API動作確認 -->
-      <div class="api-test-section">
-        <h2 class="api-title">API動作確認</h2>
-        <div class="api-buttons">
-          <button @click="testStockAPI" class="api-button">
-            株価API テスト
-          </button>
-          <button @click="testIndexAPI" class="api-button">
-            指数API テスト
-          </button>
-          <button @click="testWeatherAPI" class="api-button">
-            気象API テスト
-          </button>
-        </div>
-        
-        <div v-if="apiResult" class="api-result">
-          <h3 class="result-title">API レスポンス:</h3>
-          <pre class="result-content">{{ apiResult }}</pre>
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -136,36 +115,6 @@ const fetchWeatherData = async () => {
     weatherData.value = data
   } catch (error) {
     console.error('気象データ取得エラー:', error)
-  }
-}
-
-const testStockAPI = async () => {
-  try {
-    const response = await fetch('/api/v1/stocks?symbols=6326,9984,1377')
-    const data = await response.json()
-    apiResult.value = JSON.stringify(data, null, 2)
-  } catch (error) {
-    apiResult.value = `エラー: ${error.message}`
-  }
-}
-
-const testIndexAPI = async () => {
-  try {
-    const response = await fetch('/api/v1/indices?period=7d')
-    const data = await response.json()
-    apiResult.value = JSON.stringify(data, null, 2)
-  } catch (error) {
-    apiResult.value = `エラー: ${error.message}`
-  }
-}
-
-const testWeatherAPI = async () => {
-  try {
-    const response = await fetch('/api/v1/weather?period=7d')
-    const data = await response.json()
-    apiResult.value = JSON.stringify(data, null, 2)
-  } catch (error) {
-    apiResult.value = `エラー: ${error.message}`
   }
 }
 
